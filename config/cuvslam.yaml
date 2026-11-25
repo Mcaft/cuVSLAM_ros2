@@ -1,0 +1,75 @@
+# 完整参数表：camera / extrinsic / IMU / odometry / SLAM / runtime
+# 用法： ros2 launch cuvslam_bridge cuvslam.launch.py config_file:=<此文件>
+#       或 ros2 run cuvslam_bridge cuvslam_bridge_node --ros-args --params-file <此文件>
+cuvslam_bridge:
+  ros__parameters:
+    # ---------- 图像流 ----------
+    width: 640
+    height: 480
+    fps: 30
+
+    # ---------- 标定来源 ----------
+    # true  = 从 RealSense 工厂标定读取内参/双目外参（推荐，D435i 出厂已标定）
+    # false = 使用下面 cam0_*/cam1_* 的值（自己 Kalibr 标定后用）
+    auto_calibration: true
+
+    # ---------- 相机 0（左 IR）----------
+    cam0_fx: 386.40
+    cam0_fy: 386.40
+    cam0_cx: 319.32
+    cam0_cy: 240.52
+    cam0_distortion_model: pinhole      # pinhole | brown | fisheye | polynomial
+    cam0_distortion: [0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # ---------- 相机 1（右 IR）----------
+    cam1_fx: 386.40
+    cam1_fy: 386.40
+    cam1_cx: 319.32
+    cam1_cy: 240.52
+    cam1_distortion_model: pinhole
+    cam1_distortion: [0.0, 0.0, 0.0, 0.0, 0.0]
+    # rig_from_camera：q(x,y,z,w) + t(x,y,z)，rig 系 = 相机0。
+    # 注意是「相机1 在 rig 中的位姿」，即 RealSense 的 ir2.get_extrinsics_to(ir1)。
+    cam1_rig_from_camera: [0.0, 0.0, 0.0, 1.0, 0.04993, 0.0, 0.0]
+
+    # ---------- IMU ----------
+    # IMU 在 rig 中的位姿；D435i 出厂不提供，Kalibr 标定后填这里
+    imu_rig_from_imu: [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    imu_gyro_noise_density: 2.4e-4       # rad/s/sqrt(Hz)
+    imu_gyro_random_walk: 3.0e-6         # rad/s^2/sqrt(Hz)
+    imu_accel_noise_density: 8.0e-4      # m/s^2/sqrt(Hz)
+    imu_accel_random_walk: 1.5e-5        # m/s^3/sqrt(Hz)
+    imu_frequency: 400.0
+
+    # ---------- 里程计 ----------
+    odometry_mode: inertial              # inertial | stereo | mono | rgbd | multisensor
+    imu_decimate: 1                      # 每 N 个 IMU 样本喂一个
+    rectified_stereo_camera: true        # IR 对是硬件校正过的
+    async_sba: false
+    use_denoising: false
+    use_motion_model: true
+    use_gpu: true
+    max_frame_delta_s: 1.0
+
+    # ---------- SLAM ----------
+    use_slam: false                      # true 才有回环 + 地图点（/cuvslam/landmarks）
+    slam_sync_mode: true
+    slam_use_gpu: true
+    slam_map_cache_path: ""              # 非空则退出时 save_map 到该路径
+    slam_map_cell_size: 0.5
+    slam_max_landmarks_distance: 50.0
+    slam_max_map_size: 300
+    slam_planar_constraints: false
+    slam_retention_time_ms: 0
+    slam_throttling_time_ms: 0
+
+    # ---------- 运行 ----------
+    warmup_frames: 30
+    rebase_origin: true
+    jump_warn: 0.3
+    run_seconds: 0.0
+    snapshot_path: ""
+    publish_image: false
+    publish_camera_info: true
+    frame_id: map
+    body_frame: base_link
