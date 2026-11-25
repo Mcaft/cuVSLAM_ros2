@@ -121,7 +121,12 @@ class CuvslamBridge(Node):
         cfg = {}
         for k, default in self.P.items():
             self.declare_parameter(k, default)
-            cfg[k] = self.get_parameter(k).value
+            try:
+                cfg[k] = self.get_parameter(k).value
+            except Exception:
+                # e.g. an empty YAML list makes rclpy unable to type the parameter
+                self.get_logger().warn(f"parameter '{k}' uninitialised, using default {default!r}")
+                cfg[k] = default
         self.cfg = cfg
 
         self.width = int(cfg["width"])

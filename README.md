@@ -95,6 +95,45 @@ ros2 launch cuvslam_bridge cuvslam.launch.py rviz:=true            # 需要桌�
 | `/camera/infra1/image_raw` | Image | `publish_image:=true` |
 | `/camera/infra1/camera_info` | CameraInfo | pinhole、无畸变（IR 已硬件校正） |
 
+## 用 Kalibr 标定结果（可选）
+
+用 Kalibr 标完 IMU-相机后，把 `camchain-imucam.yaml` 转成本包参数：
+
+```bash
+python3 scripts/kalibr2cuvslam.py --in camchain-imucam.yaml \
+        --base config/cuvslam.yaml --out rig_kalibr.yaml
+ros2 launch cuvslam_bridge cuvslam.launch.py config_file:=$(pwd)/rig_kalibr.yaml
+```
+
+转换规则：
+
+| Kalibr | 本包参数 | 说明 |
+|---|---|---|
+| `cam0.intrinsics` / `cam1.intrinsics` | `cam{0,1}_fx/fy/cx/cy` | `[fx, fy, cx, cy]` |
+| `distortion_model: radtan` | `cam*_distortion_model: brown` | `equidistant`→`fisheye`，`none`→`pinhole` |
+| `cam0.T_cam_imu` | `imu_rig_from_imu` | `p_cam0 = T·p_imu`，正是 rig_from_imu 的语义 |
+| `cam1.T_cn_cnm1` | `cam1_rig_from_camera` | `p_cam0 = T·p_cam1` |
+| `resolution` | `width` / `height` | |
+
+脚本会自动把 `auto_calibration` 置为 `false`（否则节点仍用出厂标定）。
+`timeshift_cam_imu` 不会被应用（本节点不改时间戳），转换时会提示。
+
+两个容易踩的点（脚本已处理）：
+
+- **`T_cn_cnm1` 要取逆**：Kalibr 的语义是 `p_cam1 = T · p_cam0`，而 cuVSLAM 要的是
+  `p_cam0 = R · p_cam1 + t`。转换后 `baseline` 应为 **正数**（D435i ≈ +49.93 mm），
+  若为负说明方向理解反了。
+- **rectified 模式必须 pinhole**：`rectified_stereo_camera: true` 时 cuVSLAM 会拒绝非 pinhole
+  模型（`Rectified stereo camera mode requires pinhole distortion model`），而 D435i 的 IR 流本身
+  已经硬件去畸变，所以脚本默认丢掉 Kalibr 的 radtan 系数；只有喂原始（未校正）图像时才用
+  `--keep-distortion`。
+
+样例见 `samples/camchain-imucam.yaml`：
+
+```bash
+python3 scripts/kalibr2cuvslam.py --in samples/camchain-imucam.yaml --print
+```
+
 ## 已知限制
 
 1. **IMU 约 30 Hz**：四流 pipeline 每个 frameset 只带 1 条 gyro。手动 sensor API 可拿

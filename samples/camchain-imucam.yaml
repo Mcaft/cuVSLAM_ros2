@@ -1,0 +1,36 @@
+# Example Kalibr output (camchain-imucam.yaml) used by scripts/kalibr2cuvslam.py.
+# Values are synthetic: cam0 looks down +z, IMU is rotated 90 deg about x and
+# sits 2 cm right / 1 cm down, cam1 is 49.93 mm to the right of cam0.
+cam0:
+  cam_overlaps: [1]
+  camera_model: pinhole
+  distortion_coeffs: [0.12, -0.08, 0.0011, -0.0007]
+  distortion_model: radtan
+  intrinsics: [386.4021, 386.3977, 319.321, 240.518]
+  resolution: [640, 480]
+  rostopic: /camera/infra1/image_raw
+  T_cam_imu:
+    rows: 4
+    cols: 4
+    dt: d
+    data: [1.0, 0.0, 0.0, 0.02,
+           0.0, 0.0, -1.0, -0.01,
+           0.0, 1.0, 0.0, 0.005,
+           0.0, 0.0, 0.0, 1.0]
+  timeshift_cam_imu: 0.001234
+cam1:
+  cam_overlaps: [0]
+  camera_model: pinhole
+  distortion_coeffs: [0.11, -0.07, 0.0009, -0.0005]
+  distortion_model: radtan
+  intrinsics: [386.1188, 386.1044, 318.776, 240.312]
+  resolution: [640, 480]
+  rostopic: /camera/infra2/image_raw
+  T_cn_cnm1:
+    rows: 4
+    cols: 4
+    dt: d
+    data: [1.0, 0.0, 0.0, -0.04993,
+           0.0, 1.0, 0.0, 0.0,
+           0.0, 0.0, 1.0, 0.0,
+           0.0, 0.0, 0.0, 1.0]
